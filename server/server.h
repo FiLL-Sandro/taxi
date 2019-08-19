@@ -5,5 +5,8 @@
 #include "init_server.h"
 #include "receiving.h"
 #include "proccessing.h"
+#include "init_session.h"
+
+#define THREADS 4
 
 #endif

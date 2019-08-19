@@ -29,5 +29,6 @@ TAILQ_HEAD(th_que_msg, que_msg);
 extern struct th_que_msg que_msg_head;
 extern int listen_sfd;
 extern struct sockaddr_in *server_addr;
+extern pthread_mutex_t access_to_db;
 
 #endif

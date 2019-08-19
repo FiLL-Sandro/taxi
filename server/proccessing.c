@@ -12,35 +12,28 @@ static void proc_que_norm(que_msg_t *que_msg);
 void* proccessing(void *arg)
 {
 	que_msg_t *que_msg = NULL;
-	int driver_fd = 0;
-	passenger_t *pass = NULL;
 	que_msg_type_t mask = QUE_NORM | QUE_DEL;
 
 	while (1)
 	{
-		if ((que_msg = take_que_msg(mask)) != NULL)
+		if ((que_msg = take_que_msg(mask)) == NULL)
 		{
-			switch (que_msg->type)
-			{
-				case QUE_NORM: proc_que_norm(que_msg); break;
-				case QUE_DEL: del_entry(que_msg->sfd); break;
-			}
-
-			if (que_msg->data != NULL) free(que_msg->data);
-			free(que_msg);
+			sleep(1);
+			continue;
 		}
 
-		pass = set_session(&driver_fd);
-		if (pass != NULL)
+		pthread_mutex_lock(&access_to_db);			//MUTEX_LOCK
+
+		switch (que_msg->type)
 		{
-			if (send_message(driver_fd, MSG_INIT_SESSION,
-							 pass, sizeof(passenger_t)) == -1)
-			{
-				log_debug("FAIL: send_message: ");
-				set_free_peer(take_dest_fd(driver_fd), NULL);
-				del_entry(driver_fd);
-			}
+			case QUE_NORM: proc_que_norm(que_msg); break;
+			case QUE_DEL: del_entry(que_msg->sfd); break;
 		}
+
+		pthread_mutex_unlock(&access_to_db);		//MUTEX_UNLOCK
+
+		if (que_msg->data != NULL) free(que_msg->data);
+		free(que_msg);
 	}
 }
 

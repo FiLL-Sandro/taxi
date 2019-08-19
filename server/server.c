@@ -1,5 +1,6 @@
 #include "server.h"
 
+pthread_mutex_t access_to_db = PTHREAD_MUTEX_INITIALIZER;
 int listen_sfd;
 struct sockaddr_in *server_addr = NULL;
 struct th_que_msg que_msg_head =
@@ -9,11 +10,15 @@ int main(void)
 {
 	int i = 0;
 	pthread_t tid_main = pthread_self();
-	pthread_t tid_proc, tid_recv;
+	pthread_t tid_proc[THREADS], tid_recv, tid_sess;
 
 	if (init_server() == -1) goto failure;
 	pthread_create(&tid_recv, NULL, receiving, &tid_main);
-	pthread_create(&tid_proc, NULL, proccessing, NULL);
+	for (i = 0; i < THREADS; ++i)
+	{
+		pthread_create(&tid_proc[i], NULL, proccessing, NULL);
+	}
+	pthread_create(&tid_sess, NULL, init_session, NULL);
 
 	pause();
 failure:

@@ -1,7 +1,8 @@
 VPATH := ../common
 include_path := ../common
 lib_path := ../common/lib -L.
-server_depend := server.o init_server.o receiving.o proccessing.o poll_oper.o que_msg.o
+server_depend := server.o init_server.o receiving.o \
+	proccessing.o poll_oper.o que_msg.o init_session.o
 libdb := vector.o list.o super_db.o
 
 %.c: %.h
