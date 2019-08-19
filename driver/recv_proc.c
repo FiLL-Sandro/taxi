@@ -2,6 +2,7 @@
 
 static int proc_msg_init_sess(message_t *msg);
 static int proc_msg_trans(void* data);
+static bool in_session = false;
 
 /*
  * recv_proc -- receiving and processing messages
@@ -21,6 +22,7 @@ int recv_proc(void)
 		goto failure;
 	}
 
+	if (in_session == true) alarm(0);
 	switch (msg->type)
 	{
 		case MSG_INIT_SESSION:
@@ -35,6 +37,7 @@ int recv_proc(void)
 			log_debug("FAIL: bad message type;(type: %u)", msg->type);
 			goto failure;
 	}
+	if (in_session == true) alarm(TIME_WAIT);
 
 	log_info("Driver now: %u", pri_data->stat);
 	if (msg != NULL) free(msg), msg = NULL;
@@ -63,6 +66,7 @@ int proc_msg_init_sess(message_t *msg)
 		goto failure;
 	}
 
+	in_session = true;
 	route = (int*)malloc(sizeof(int) * 4);
 	memcpy(route, pass->route, sizeof(int) * 4);
 
@@ -119,6 +123,7 @@ int proc_msg_trans(void *data)
 				((int*)data_for_resp)[1] = pri_data->coord[1] = route[3];
 				pri_data->stat =DRI_FREE;
 				free(route), route = NULL;
+				in_session = false, alarm(0);
 				break;
 		}
 

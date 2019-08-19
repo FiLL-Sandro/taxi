@@ -88,6 +88,7 @@ int del_entry(int sfd)
 	}
 
 	unset_entry(tmp_ent, tmp_ent->kind);
+	free(tmp_ent), tmp_ent = NULL;
 	if (del_item_vec(&db, &size_db, (u_int)sfd) == -1)
 	{
 		log_debug("FAIL: del_item_vec: deleting from vector are failed", NULL);

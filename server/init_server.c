@@ -1,5 +1,7 @@
 #include "init_server.h"
 
+static void sigint_hand(int sig);
+
 /*
  * init_server -- initialization server;
  *
@@ -9,6 +11,18 @@
  */
 int init_server(void)
 {
+	sigset_t mask;
+	struct sigaction sigact;
+
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGINT);
+	pthread_sigmask(SIG_UNBLOCK, &mask, NULL);
+
+	sigact.sa_mask = mask;
+	sigact.sa_handler = sigint_hand;
+	sigact.sa_flags = 0;
+	sigaction(SIGINT, &sigact, NULL);
+
 	listen_sfd = tcp_socket_ip4();
 	if (listen_sfd < 0) goto failure;
 
@@ -24,6 +38,8 @@ int init_server(void)
 
 	TAILQ_INIT(&que_msg_head);
 
+
+
 	goto success;
 
 failure:
@@ -33,3 +49,17 @@ success:
 	log_info("Initialization success...", NULL);
 	return 0;
 }
+
+//static_functions________________________________________________
+/*
+ * sigint_hand -- SIGINT handler;
+ * @sig -- signal number;
+ */
+void sigint_hand(int sig)
+{
+	log_info("SIGINT was caught", NULL);
+
+	close(listen_sfd);
+}
+//________________________________________________________________
+

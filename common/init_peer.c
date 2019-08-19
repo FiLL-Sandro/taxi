@@ -1,5 +1,8 @@
 #include "init_peer.h"
 
+static void sigalrm_hand(int sig);
+static void setting_signal(void);
+
 /*
  * init_peer -- create and insert initialization data for @kind
  * @kind -- kind of host;
@@ -16,6 +19,8 @@ void* init_peer(kind_host_t kind, int argc, char *argv[])
 	driver_t tmp_dri;
 	passenger_t tmp_pass;
 	int i;
+
+	setting_signal();
 
 	srand((unsigned int)time(NULL));
 
@@ -67,6 +72,16 @@ ret_f:
 	return ret_f;
 }
 
+/*
+ * connect_to_server -- connecting to server and create struct with him address
+ * and create socket for link with it
+ * @serv_addr -- value-result: server address;
+ * @server_fd -- value-result: socket for link with server;
+ *
+ * return:
+ * 0 -- success;
+ * -1 -- failure;
+ */
 int connect_to_server(struct sockaddr_in **serv_addr, int *server_fd)
 {
 	if (serv_addr == NULL || server_fd == NULL)
@@ -101,6 +116,17 @@ failure:
 	return -1;
 }
 
+/*
+ * registration -- sending message for registration on server
+ * @server_fd -- socket for link with server;
+ * @type -- message type;
+ * @pri_data -- private data of peer;
+ * @size_data -- size of private data;
+ *
+ * return:
+ * 0 -- success;
+ * -1 -- failure;
+ */
 int registration(int server_fd, type_msg_t type, void *pri_data, size_t size_data)
 {
 	if (type != MSG_AUTH_DRI && type != MSG_AUTH_PASS)
@@ -119,3 +145,33 @@ int registration(int server_fd, type_msg_t type, void *pri_data, size_t size_dat
 failure:
 	return -1;
 }
+
+//static_functions____________________________________________
+/*
+ * sigalrm_hand -- SIGALRM handler
+ * @sig -- signal number;
+ */
+void sigalrm_hand(int sig)
+{
+	log_info("SIGALRM: server no responce", NULL);
+	exit(EXIT_FAILURE);
+}
+
+/*
+ * setting_signal -- settings for processing signal SIGALRM
+ */
+void setting_signal()
+{
+	sigset_t mask;
+	struct sigaction sigact;
+
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGALRM);
+	sigprocmask(SIG_UNBLOCK, &mask, NULL);
+
+	sigact.sa_mask = mask;
+	sigact.sa_handler = sigalrm_hand;
+	sigact.sa_flags = 0;
+	sigaction(SIGALRM, &sigact, NULL);
+}
+//____________________________________________________________

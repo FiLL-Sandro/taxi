@@ -3,7 +3,8 @@
 
 #include "common_data_server.h"
 #include "super_db.h"
+#include "que_msg.h"
 
-extern int proccessing(void);
+extern void* proccessing(void *arg);
 
 #endif

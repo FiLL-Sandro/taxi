@@ -5,6 +5,8 @@
 #include "communication.h"
 #include "wrappers_network.h"
 #include "logging.h"
+#include <signal.h>
+#include <unistd.h>
 
 #define RESP_STAT 4
 

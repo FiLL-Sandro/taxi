@@ -8,6 +8,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 #define RANGE_COORD 100
 

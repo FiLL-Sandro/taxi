@@ -7,12 +7,13 @@
 #include "logging.h"
 #include <sys/queue.h>
 #include <unistd.h>
+#include <pthread.h>
+#include <signal.h>
 
 typedef enum que_msg_type_e
 {
-	QUE_NORM,
-	QUE_DEL,
-	QUE_POLL_DEL
+	QUE_NORM		= 1,
+	QUE_DEL			= 2
 } que_msg_type_t;
 
 typedef struct que_msg

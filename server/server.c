@@ -8,17 +8,14 @@ struct th_que_msg que_msg_head =
 int main(void)
 {
 	int i = 0;
+	pthread_t tid_main = pthread_self();
+	pthread_t tid_proc, tid_recv;
 
 	if (init_server() == -1) goto failure;
+	pthread_create(&tid_recv, NULL, receiving, &tid_main);
+	pthread_create(&tid_proc, NULL, proccessing, NULL);
 
-	for (; ; )
-	{
-		if (receiving() == -1) goto failure;
-		if (proccessing() == -1) goto failure;
-	}
-
-
-	exit(EXIT_SUCCESS);
+	pause();
 failure:
 	exit(EXIT_FAILURE);
 }

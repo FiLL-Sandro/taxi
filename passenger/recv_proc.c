@@ -20,6 +20,7 @@ int recv_proc(void)
 		goto failure;
 	}
 
+	alarm(0);
 	switch (msg->type)
 	{
 		case MSG_ORDER_COMP_DRI:
@@ -32,6 +33,7 @@ int recv_proc(void)
 			log_debug("FAIL: bad message type;(type: %u)", msg->type);
 			goto failure;
 	}
+	alarm(TIME_WAIT);
 
 	log_info("Passenger: %u", pri_data->stat);
 	if (msg != NULL) free(msg), msg = NULL;
@@ -53,8 +55,13 @@ int proc_ord_comp_dri(void)
 	size_t size_data;
 	type_msg_t type_msg = MSG_ORDER_COMP_PASS;
 
+	alarm(0);
+
 	size_of_message_data(type_msg, &size_data);
-	send_message(sfd, type_msg, data, size_data);
+	if (send_message(sfd, type_msg, data, size_data) != -1)
+	{
+		recv_message(sfd);
+	}
 
 	flag_complete_work = true;
 	return 0;
