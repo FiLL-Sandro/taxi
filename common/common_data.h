@@ -17,7 +17,8 @@ typedef enum type_msg_e
 	MSG_ORDER_COMP_PASS,
 	MSG_TRANSIT_FROM_DRI,
 	MSG_TRANSIT_FROM_PASS,
-	MSG_INIT_SESSION
+	MSG_INIT_SESSION,
+	MSG_DRI_CUR_POS
 } type_msg_t;
 
 typedef enum p_stat_e

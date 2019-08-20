@@ -22,5 +22,6 @@ int main(void)
 
 	pause();
 failure:
+	log_info("SERVER CRASHED", NULL);
 	exit(EXIT_FAILURE);
 }

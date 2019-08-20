@@ -85,6 +85,9 @@ void proc_que_norm(que_msg_t *que_msg)
 			}
 			break;
 
+		case MSG_DRI_CUR_POS:
+			change_position(sfd, (int*)msg->data);
+			break;
 		default:
 			close(sfd);
 			break;

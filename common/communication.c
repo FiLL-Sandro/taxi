@@ -146,6 +146,7 @@ int size_of_message_data(type_msg_t type, size_t *res)
 		case MSG_TRANSIT_FROM_DRI: *res = sizeof(d_stat_t); break;
 		case MSG_TRANSIT_FROM_PASS: *res = sizeof(p_stat_t); break;
 		case MSG_INIT_SESSION: *res = sizeof(passenger_t); break;
+		case MSG_DRI_CUR_POS: *res = sizeof(int) * 2; break;
 		default:
 			log_debug("FAIL: unknown type;(type: %u)", type);
 			goto failure;
