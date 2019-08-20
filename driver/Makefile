@@ -12,7 +12,7 @@ libs:
 	$(MAKE) -C ../common/ libinit_peer.a
 
 VV_driver: $(driver_depend) libs
-	$(CC) $(CFLAGS) -L $(lib_path) $(driver_depend) -o $@ -linit_peer -lnetwork
+	$(CC) $(CFLAGS) -L $(lib_path) $(driver_depend) -o $@ -linit_peer -lnetwork -lm
 
 clean:
 	rm -fv *.o VV_*

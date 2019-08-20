@@ -100,6 +100,12 @@ int proc_trans_msg(void *data)
 		switch (tmp_resp[j])
 		{
 			case PASS_LOAD: case PASS_RIDE_TO:
+				if (tmp_resp[j] == PASS_RIDE_TO)
+				{
+					log_info("Passenger loading...", NULL);
+					sleep(pri_data->time_load);
+				}
+
 				type_msg = MSG_TRANSIT_FROM_PASS;
 				size_of_message_data(type_msg, &size_data);
 				data = malloc(size_data);

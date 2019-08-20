@@ -2,6 +2,8 @@
 
 static int proc_msg_init_sess(message_t *msg);
 static int proc_msg_trans(void* data);
+static int riding(int x1, int y1, int x2, int y2);
+
 static bool in_session = false;
 
 /*
@@ -70,6 +72,44 @@ int proc_msg_init_sess(message_t *msg)
 	route = (int*)malloc(sizeof(int) * 4);
 	memcpy(route, pass->route, sizeof(int) * 4);
 
+	if (riding(pri_data->coord[0], pri_data->coord[1],
+			   route[0], route[1]) == -1)
+	{
+		log_debug("FAIL: riding:", NULL);
+		goto failure;
+	}
+
+	return 0;
+failure:
+	return -1;
+}
+
+int riding(int x1, int y1, int x2, int y2)
+{
+	int S = 0, t = 0, i = 0, lambda = 0;
+
+	S = round(sqrt(pow((double)(x1 - x2), 2.) +
+			pow((double)(y1 - y2), 2.)));
+
+	t = S / pri_data->speed;
+
+	for (i = 0; i < t; ++i)
+	{
+		sleep(1);
+		lambda = i / (t - i);
+		pri_data->coord[0] = (x1 + x2 * lambda) / (1 + lambda);
+		pri_data->coord[1] = (y1 + y2 * lambda) / (1 + lambda);
+
+		if (send_message(sfd, MSG_DRI_CUR_POS, pri_data->coord, sizeof(int) * 2) == -1)
+		{
+			log_debug("FAIL: send_message: message with current position", NULL);
+			goto failure;
+		}
+
+		log_info("cur_pos: %d,%d; target_pos: %d,%d",
+				 pri_data->coord[0], pri_data->coord[1], x2, y2);
+	}
+
 	return 0;
 failure:
 	return -1;
@@ -115,6 +155,13 @@ int proc_msg_trans(void *data)
 				*((d_stat_t*)data_for_resp) = pri_data->stat = resp_arr[p_stat][i];
 				break;
 			case DRI_COMP:
+				if (riding(route[0], route[1],
+						   route[2], route[3]) == -1)
+				{
+					log_debug("FAIL: riding:", NULL);
+					goto failure;
+				}
+
 				type_msg = MSG_ORDER_COMP_DRI;
 				size_of_message_data(type_msg, &size_data);
 				data_for_resp = malloc(size_data);

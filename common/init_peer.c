@@ -26,6 +26,7 @@ void* init_peer(kind_host_t kind, int argc, char *argv[])
 
 	if (kind == HOST_DRIVER)
 	{
+		tmp_dri.speed = LEFT_BORDER_SPEED + rand() % DELTA_SPEED;
 		tmp_dri.stat = DRI_FREE;
 		tmp_dri.coord[0] = argc == 3 ? atoi(argv[1])
 									 : rand() % RANGE_COORD;
@@ -39,6 +40,7 @@ void* init_peer(kind_host_t kind, int argc, char *argv[])
 	}
 	else if (kind == HOST_PASSENGER)
 	{
+		tmp_pass.time_load = rand() % DELTA_TIME_LOAD;
 		tmp_pass.stat = PASS_WAIT;
 		if (argc == 5)
 		{

@@ -43,12 +43,14 @@ typedef enum d_stat_e
 typedef struct passenger
 {
 	int route[4];
+	int time_load;
 	p_stat_t stat;
 } passenger_t;
 
 typedef struct driver
 {
 	int coord[2];
+	int speed;
 	d_stat_t stat;
 } driver_t;
 

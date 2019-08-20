@@ -197,7 +197,7 @@ ssize_t wrap_recv(int sockfd, void *buf, size_t len, int flags)
 
 ssize_t wrap_send(int sockfd, const void *buf, size_t len, int flags)
 {
-	ssize_t ret_f = send(sockfd, buf, len, flags);
+	ssize_t ret_f = send(sockfd, buf, len, flags | MSG_NOSIGNAL);
 
 	if (ret_f == -1)
 	{

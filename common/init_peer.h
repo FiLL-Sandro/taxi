@@ -11,6 +11,9 @@
 #include <signal.h>
 
 #define RANGE_COORD 100
+#define LEFT_BORDER_SPEED 10
+#define DELTA_SPEED 5
+#define DELTA_TIME_LOAD 5
 
 extern void* init_peer(kind_host_t kind, int argc, char *argv[]);
 extern int connect_to_server(struct sockaddr_in **serv_addr, int *server_fd);

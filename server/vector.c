@@ -73,19 +73,26 @@ int cleaning_vector(vec_i_t** vec, u_int* size_vec)
 	u_int tmp_size = 0;
 
 	for (tmp_i = *vec + *size_vec - 1, tmp_size = *size_vec;
-		 tmp_i->is_enable == false && tmp_size > 0;
+		 tmp_i->is_enable == false && tmp_size > 0 && tmp_i != *vec;
 		 --tmp_i, --tmp_size);
 
 	if (*size_vec != tmp_size)
 	{
-		tmp_i = (vec_i_t*)realloc(*vec, tmp_size * sizeof(vec_i_t));
-		if (tmp_i != NULL)
+		if (tmp_size == 0)
 		{
-			*vec = tmp_i, *size_vec = tmp_size;
+			free(*vec), *vec = NULL, *size_vec = 0;
 		}
 		else
 		{
-			goto failure;
+			tmp_i = (vec_i_t*)realloc(*vec, tmp_size * sizeof(vec_i_t));
+			if (tmp_i != NULL)
+			{
+				*vec = tmp_i, *size_vec = tmp_size;
+			}
+			else
+			{
+				goto failure;
+			}
 		}
 	}
 
