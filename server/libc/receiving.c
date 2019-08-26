@@ -78,7 +78,6 @@ int proc_res_poll_read(int *arr, int size)
 {
 	int i = 0, fd = 0;
 	message_t *msg = NULL;
-	que_msg_t *que_msg = NULL;
 
 	for (i = 0; i < size; ++i)
 	{

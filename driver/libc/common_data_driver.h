@@ -2,8 +2,8 @@
 #define COMMON_DATA_DRIVER_H
 
 #include "common_data.h"
-#include "communication.h"
-#include "wrappers_network.h"
+#include "libc/communication.h"
+#include "libc/wrappers_network.h"
 #include "logging.h"
 #include <signal.h>
 #include <unistd.h>

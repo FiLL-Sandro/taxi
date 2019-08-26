@@ -1,17 +1,11 @@
-libnetwork_depend := wrappers_network.o communication.o
-libinit_peer_depend := init_peer.o
+parts := libc libzmq
+libs := network init_peer
 
-%.c: %.h
-%.o: %.c
-	$(CC) $(CFLAGS) -c $<
+$(parts:%=clean_common_%): clean_common_%:
+	$(MAKE) -C ./$* clean
 
-libnetwork.a: $(libnetwork_depend) logging.h
-	ar rc $@ $(libnetwork_depend)
-	mv $@ -t lib/
+$(libs:%=%_libc): %_libc:
+	$(MAKE) -s -C ./libc lib$*.a
 
-libinit_peer.a: $(libinit_peer_depend) logging.h
-	ar rc $@ $(libinit_peer_depend)
-	mv $@ -t lib/
-
-clean:
-	rm -fv *.o ./lib/*
+$(libs:%=%_libzmq): %_libzmq:
+	$(MAKE) -s -C ./libzmq lib$*.a

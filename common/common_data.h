@@ -1,13 +1,12 @@
 #ifndef COMMON_DATA_H
 #define COMMON_DATA_H
 
-#include <netinet/in.h>
+#include <stdlib.h>
 
 #define SERVER_IP_DIGI INADDR_LOOPBACK
 #define SERVER_IP_STR "127.0.0.1"
 #define SERVER_PORT 50001
-
-#include <stdlib.h>
+#define SERVER_PORT_STR "50001"
 
 typedef enum type_msg_e
 {

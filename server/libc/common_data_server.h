@@ -2,8 +2,8 @@
 #define COMMON_DATA_SERVER_H
 
 #include "common_data.h"
-#include "wrappers_network.h"
-#include "communication.h"
+#include "libc/wrappers_network.h"
+#include "libc/communication.h"
 #include "logging.h"
 #include <sys/queue.h>
 #include <unistd.h>

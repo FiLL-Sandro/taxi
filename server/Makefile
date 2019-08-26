@@ -1,20 +1,7 @@
-VPATH := ../common
-include_path := ../common
-lib_path := ../common/lib -L.
-server_depend := server.o init_server.o receiving.o \
-	proccessing.o poll_oper.o que_msg.o init_session.o
-libdb := vector.o list.o super_db.o
+libs := libc libzmq
 
-%.c: %.h
-%.o: %.c
-	$(CC) $(CFLAGS) -iquote $(include_path) -c $<
+$(libs:%=server_%): server_%:
+	$(MAKE) -s -C ./$* VV_server
 
-libs: $(libdb)
-	$(MAKE) -C ../common/ libnetwork.a
-	ar rc libdb.a $(libdb)
-
-VV_server: $(server_depend) libs
-	$(CC) $(CFLAGS) -L $(lib_path) $(server_depend) -o $@ -lnetwork -ldb -lm -lpthread
-
-clean:
-	rm -fv *.o VV_* lib*.a
+$(libs:%=clean_server_%): clean_server_%:
+	$(MAKE) -s -C ./$* clean

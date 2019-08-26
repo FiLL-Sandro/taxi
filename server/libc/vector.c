@@ -96,7 +96,6 @@ int cleaning_vector(vec_i_t** vec, u_int* size_vec)
 		}
 	}
 
-success:
 	return 0;
 failure:
 	return -1;

@@ -3,7 +3,8 @@
 typedef struct entry
 {
 	kind_host_t kind;
-	int dest_fd;
+	zmq_msg_t zmq_msg;
+	DEST_FD_ZMQ dest;
 	free_item_t *p_free;
 	void *data;
 } entry_t;
@@ -20,12 +21,12 @@ static int* take_driver_pos(u_int sfd);
 static int* take_passenger_route(u_int sfd);
 static free_item_t* find_driver(free_item_t *tmp_pass);
 static void prepare_peers_for_session(free_item_t *dri, free_item_t *pass);
-static int set_entry(entry_t *ent, int sfd, kind_host_t kind, int dest_fd, void *data);
+static int set_entry(entry_t *ent, int sfd, kind_host_t kind, zmq_msg_t* zmq_src, int dest_fd, zmq_msg_t* zmq_dest, void *data);
 static void unset_entry(entry_t *ent, kind_host_t kind);
 
 /*
  * add_entry -- add record in db;
- * @sfd -- socket/cell;
+ * @zmq_msg -- ZMQ message that was received and storage needed fd;
  * @kind -- kind of peer;
  * @data -- data of peer;
  *
@@ -33,18 +34,24 @@ static void unset_entry(entry_t *ent, kind_host_t kind);
  * 0 -- success;
  * -1 -- failure;
  */
-int add_entry(int sfd, kind_host_t kind, void *data)
+int add_entry(zmq_msg_t *zmq_msg, kind_host_t kind, void *data)
 {
 	entry_t *tmp_ent = (entry_t*)malloc(sizeof(entry_t));
+	int sfd = -1;
 
-	if (tmp_ent == NULL || sfd < 0 || data == NULL)
+	if (tmp_ent == NULL || data == NULL || zmq_msg == NULL)
 	{
 		log_debug("FAIL: initialization error;\n"
-				  "(tmp_ent: %p, sfd: %d, data: %p)",
-				  (void*)tmp_ent, sfd, (void*)data);
+				  "(tmp_ent: %p data: %p, zmq_msg: %p)",
+				  (void*)tmp_ent, (void*)data, (void*)zmq_msg);
 		goto failure;
 	}
-	else if (set_entry(tmp_ent, sfd, kind, -1, data) == -1)
+	else if ((sfd = get_fd_from_msg(zmq_msg)) == -1)
+	{
+		log_debug("FAIL: get_fd_from_msg: invalid fd or error", NULL);
+		goto failure;
+	}
+	else if (set_entry(tmp_ent, sfd, kind, zmq_msg, -1, NULL, data) == -1)
 	{
 		log_debug("FAIL: entry setting are failed", NULL);
 		goto failure_after_set;
@@ -89,6 +96,7 @@ int del_entry(int sfd)
 
 	unset_entry(tmp_ent, tmp_ent->kind);
 	free(tmp_ent), tmp_ent = NULL;
+
 	if (del_item_vec(&db, &size_db, (u_int)sfd) == -1)
 	{
 		log_debug("FAIL: del_item_vec: deleting from vector are failed", NULL);
@@ -103,22 +111,22 @@ failure:
 
 /*
  * set_session -- creating a session between the passenger and the driver
- * @dri_fd -- value-result which storage driver socket;
+ * @dri_zmq -- value-result: storages driver ZMQ message for communicztion with him;
  *
  * return:
- * NULL -- session cannot be created;
- * non-NULL -- session is created;
+ * NULL -- failure: session cannot be created;
+ * non-NULL -- success: session is created -- passengeg_t was returned;
  */
-passenger_t* set_session(int *dri_fd)
+passenger_t* set_session(zmq_msg_t *dri_zmq)
 {
 	free_item_t *tmp_dri = NULL, *tmp_pass = NULL;
 	passenger_t *pass_data = NULL;
 	entry_t *tmp_ent = NULL;
 
-	if (dri_fd == NULL)
+	if (dri_zmq == NULL)
 	{
 		log_debug("FAIL: no place where located result\n"
-				  "(dri_fd: %p)", (void*)dri_fd);
+				  "(dri_zmq: %p)", (void*)dri_zmq);
 	}
 	else if (!TAILQ_EMPTY(&free_pass_head) && !TAILQ_EMPTY(&free_dri_head))
 	{
@@ -128,9 +136,9 @@ passenger_t* set_session(int *dri_fd)
 		tmp_ent = take_data_vec(db, size_db, tmp_pass->sfd);
 		pass_data = (passenger_t*)tmp_ent->data;
 
-		*dri_fd = (int)tmp_dri->sfd;
+		tmp_ent = take_data_vec(db, size_db, tmp_dri->sfd);
+		*dri_zmq = tmp_ent->zmq_msg;
 		prepare_peers_for_session(tmp_dri, tmp_pass);
-
 		log_info("Session are set...", NULL);
 	}
 
@@ -251,7 +259,8 @@ int set_free_peer(int sfd, int *pos)
 				  sfd, (void*)tmp_ent);
 		goto failure;
 	}
-	else if (set_entry(tmp_ent, sfd, tmp_ent->kind, -1, tmp_ent->data) == -1)
+	else if (set_entry(tmp_ent, sfd, tmp_ent->kind,
+					   &(tmp_ent->zmq_msg), -1, NULL, tmp_ent->data) == -1)
 	{
 		log_debug("FAIL: entry setting are failed", NULL);
 		goto failure;
@@ -267,7 +276,7 @@ failure:
 	return -1;
 }
 
-int take_dest_fd(int sfd)
+void* take_dest(int sfd)
 {
 	entry_t *tmp_ent = take_data_vec(db, size_db, (u_int)sfd);
 
@@ -280,9 +289,35 @@ int take_dest_fd(int sfd)
 	}
 
 	log_info("Destination are taken...", NULL);
-	return tmp_ent->dest_fd;
+	return &(tmp_ent->dest);
 failure:
-	return -1;
+	return NULL;
+}
+
+/*
+ * take_zmq_msg -- taking @zmq_msg of @sfd item
+ * @sfd -- cell of target entry;
+ *
+ * return:
+ * NULL -- failure;
+ * non-NULL -- success: pointer to zmq_msg_t;
+ */
+zmq_msg_t* take_zmq_msg(int sfd)
+{
+	entry_t *tmp_ent = take_data_vec(db, size_db, (u_int)sfd);
+
+	if (sfd < 0 || tmp_ent == NULL)
+	{
+		log_debug("FAIL: initialization error;\n"
+				  "(sfd: %d, tmp_ent: %p",
+				  sfd, (void*)tmp_ent);
+		goto failure;
+	}
+
+	log_info("Destination are taken...", NULL);
+	return &(tmp_ent->zmq_msg);
+failure:
+	return NULL;
 }
 
 //static_function______________________________________
@@ -292,6 +327,7 @@ failure:
  * @ent -- pointer to entry;
  * @sfd -- db cell;
  * @kind -- kind of peer;
+ * @zmq_msg -- ZMQ message;
  * @dest_fd -- fd destination;
  * @data -- peer data;
  *
@@ -299,7 +335,8 @@ failure:
  * 0 -- success;
  * -1 -- failure;
  */
-int set_entry(entry_t *ent, int sfd, kind_host_t kind, int dest_fd, void *data)
+int set_entry(entry_t *ent, int sfd, kind_host_t kind,
+			  zmq_msg_t *zmq_src, int dest_fd, zmq_msg_t *zmq_dest, void *data)
 {
 	struct tailhead *tailhead = take_free_head(kind);
 
@@ -311,8 +348,10 @@ int set_entry(entry_t *ent, int sfd, kind_host_t kind, int dest_fd, void *data)
 
 	ent->kind = kind;
 	ent->data = data;
-	ent->dest_fd = dest_fd;
+	ent->dest.dest_fd = dest_fd;
+	ent->dest.zmq_msg = zmq_dest;
 	ent->p_free = insert_free_item(tailhead, (u_int)sfd);
+	ent->zmq_msg = *zmq_src;
 
 	if (ent->p_free == NULL)
 	{
@@ -345,7 +384,8 @@ void unset_entry(entry_t *ent, kind_host_t kind)
 	}
 
 	ent->data = ent->p_free = NULL;
-	ent->dest_fd = -1;
+	ent->dest.dest_fd = -1;
+	zmq_msg_close(&(ent->zmq_msg));
 }
 
 /*
@@ -416,8 +456,8 @@ free_item_t* find_driver(free_item_t *tmp_pass)
 	{
 		pos = take_driver_pos(tmp_item->sfd);
 
-		i = round(sqrt(pow((double)(pos[0] - route[0]), 2.) +
-				pow((double)(pos[1] - route[1]), 2.)));
+		i = (int)round(sqrt(pow((double)(pos[0] - route[0]), 2.L) +
+				pow((double)(pos[1] - route[1]), 2.L)));
 
 		if (min == -1 || min > i)
 		{
@@ -438,7 +478,8 @@ void prepare_peers_for_session(free_item_t *dri, free_item_t *pass)
 	entry_t *dri_ent = take_data_vec(db, size_db, dri->sfd);
 	entry_t *pass_ent = take_data_vec(db, size_db, pass->sfd);
 
-	dri_ent->dest_fd = (int)pass->sfd, pass_ent->dest_fd = (int)dri->sfd;
+	dri_ent->dest.dest_fd = (int)pass->sfd, dri_ent->dest.zmq_msg = &(pass_ent->zmq_msg);
+	pass_ent->dest.dest_fd = (int)dri->sfd, dri_ent->dest.zmq_msg = &(dri_ent->zmq_msg);
 	remove_free_item(&free_dri_head, dri), dri_ent->p_free = NULL;
 	remove_free_item(&free_pass_head, pass), pass_ent->p_free = NULL;
 }

@@ -1,19 +1,7 @@
-VPATH := ../common
-include_path := ../common
-lib_path := ../common/lib
-passenger_depend := passenger.o init_pass.o recv_proc.o
+libs := libc libzmq
 
-%.o: %.c %.h
-	$(CC) $(CFLAGS) -iquote $(include_path) -c $<
+$(libs:%=passenger_%): passenger_%:
+	$(MAKE) -s -C ./$* VV_passenger
 
-%.h:
-
-libs:
-	$(MAKE) -C ../common/ libnetwork.a
-	$(MAKE) -C ../common/ libinit_peer.a
-
-VV_passenger: $(passenger_depend) libs
-	$(CC) $(CFLAGS) -L $(lib_path) $(passenger_depend) -o $@ -linit_peer -lnetwork
-
-clean:
-	rm -fv *.o VV_*
+$(libs:%=clean_passenger_%): clean_passenger_%:
+	$(MAKE) -s -C ./$* clean
